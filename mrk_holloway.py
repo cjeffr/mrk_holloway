@@ -1,18 +1,20 @@
 import os
 import numpy as np
 import sys
+from dataclasses import dataclass
 
+@dataclass
+class Molecule():
+    name: str
+    weight: float
+    magic_a: float
+    magic_b: float
+    mole_fraction: float
+    
 class mrkHolloway():
     """_summary_
     """
     def __init__(self):
-        self.names = ['CO2', 'CO', 'CH4', 'H2', 'H2O', 'H2S', 'SO2', 'N2']
-        self.formwt = [44.0, 28.0, 16.0, 2.0, 18.0, 34.0, 64.06, 28.0]
-        self.mixnum = 8
-        
-        
-            
-    def obtain_input(self):
         self.output_file = input('Enter name of output file \n')
         starting_vals = input('Enter T (deg C) and Molar Volume (cc/mole)\n')
         temp, volume = starting_vals.split()
@@ -20,19 +22,27 @@ class mrkHolloway():
         if self.tstart < 0.01:
             sys.exit()
         self.vstart = float(volume)
-        self.input_mixture = []
-        self.input_mixture.append(float(input('Enter mole fraction CO2 \n')))
-        self.input_mixture.append(float(input('Enter mole fraction CO \n')))
-        self.input_mixture.append(float(input('Enter mole fraction CH4 \n')))
-        self.input_mixture.append(float(input('Enter mole fraction H2 \n')))
-        self.input_mixture.append(float(input('Enter mole fraction H2O \n')))
-        self.input_mixture.append(float(input('Enter mole fraction H2S \n')))
-        self.input_mixture.append(float(input('Enter mole fraction SO2 \n')))
-        self.input_mixture.append(float(input('Enter mole fraction N2 \n')))
-    
+        self.molecules = [
+            Molecule(name='CO2', weight=44.0, magic_a=46.e6, magic_b=2.97e1, mole_fraction=input(f'Enter mole fraction CO2\n')),
+            Molecule(name='CO', weight=28.0, magic_a=16.98e6, magic_b=2.738e1, mole_fraction=input('Enter mole fraction CO \n')),
+            Molecule(name='CH4', weight=16.0, magic_a=31.59e6, magic_b=2.9703e1, mole_fraction=input('Enter mole fraction CH4 \n')),
+            Molecule(name='H2', weight=2.0, magic_a=3.56e6, magic_b=1.515e1, mole_fraction=input('Enter mole fraction H2\n')),
+            Molecule(name='H2O', weight=18.0, magic_a=35.e6, magic_b=1.46e1, mole_fraction=input('Enter mole fraction H20\n')),
+            Molecule(name='H2S', weight=34.0, magic_a=87.9e6, magic_b=2.0e1, mole_fraction=input('Enter mole fraction H2S \n')),
+            Molecule(name='SO2', weight=64.06, magic_a=142.6e6, magic_b=3.94e1, mole_fraction=input('Enter mole fraction SO2 \n')),
+            Molecule(name='N2', weight=28.0, magic_a=15.382e6, magic_b=2.68e1, mole_fraction=input('Enter mole fraction N2 \n'))]
+        
+        # for molecule in self.molecules:
+        #     molecule.mole_fraction = float(input(f'Enter mole fraction {molecule}\n'))
+        # self.names = ['CO2', 'CO', 'CH4', 'H2', 'H2O', 'H2S', 'SO2', 'N2']
+        # self.formwt = [44.0, 28.0, 16.0, 2.0, 18.0, 34.0, 64.06, 28.0]
+        #self.mixnum = 8
+        
+            
+     
     
     def check_totals(self):
-        if not sum(self.input_mixture) == 1.0:
+        if not sum(Molecule.mole_fraction) == 1.0:
             print('The mole fractions do not add up to 1.0! Start again')
             self.obtain_input()
         else:
@@ -151,7 +161,7 @@ class mrkHolloway():
     
     
     def run(self):
-        self.obtain_input()
+       
         self.check_totals()
         self.calc_form_weight()
         print('The mole fractions are:')
