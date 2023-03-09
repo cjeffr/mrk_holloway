@@ -18,51 +18,50 @@ class mrkHolloway():
         self.output_file = input('Enter name of output file \n')
         starting_vals = input('Enter T (deg C) and Molar Volume (cc/mole)\n')
         temp, volume = starting_vals.split()
+        self.num_temps = int(input('Enter the number of temperature steps to calculate\n'))
+        self.num_pressures = int(input('Enter the number of pressure steps to calculate\n'))
         self.tstart = float(temp)
         if self.tstart < 0.01:
             sys.exit()
         self.vstart = float(volume)
+        self.obtain_input()
+        self.mixnum = len(self.molecules)
+        self.formula_weight = sum(gas.weight * gas.mole_fraction for gas in self.molecules)
+        
+    def obtain_input(self):
         self.molecules = [
-            Molecule(name='CO2', weight=44.0, magic_a=46.e6, magic_b=2.97e1, mole_fraction=input(f'Enter mole fraction CO2\n')),
-            Molecule(name='CO', weight=28.0, magic_a=16.98e6, magic_b=2.738e1, mole_fraction=input('Enter mole fraction CO \n')),
-            Molecule(name='CH4', weight=16.0, magic_a=31.59e6, magic_b=2.9703e1, mole_fraction=input('Enter mole fraction CH4 \n')),
-            Molecule(name='H2', weight=2.0, magic_a=3.56e6, magic_b=1.515e1, mole_fraction=input('Enter mole fraction H2\n')),
-            Molecule(name='H2O', weight=18.0, magic_a=35.e6, magic_b=1.46e1, mole_fraction=input('Enter mole fraction H20\n')),
-            Molecule(name='H2S', weight=34.0, magic_a=87.9e6, magic_b=2.0e1, mole_fraction=input('Enter mole fraction H2S \n')),
-            Molecule(name='SO2', weight=64.06, magic_a=142.6e6, magic_b=3.94e1, mole_fraction=input('Enter mole fraction SO2 \n')),
-            Molecule(name='N2', weight=28.0, magic_a=15.382e6, magic_b=2.68e1, mole_fraction=input('Enter mole fraction N2 \n'))]
-        
-        # for molecule in self.molecules:
-        #     molecule.mole_fraction = float(input(f'Enter mole fraction {molecule}\n'))
-        # self.names = ['CO2', 'CO', 'CH4', 'H2', 'H2O', 'H2S', 'SO2', 'N2']
-        # self.formwt = [44.0, 28.0, 16.0, 2.0, 18.0, 34.0, 64.06, 28.0]
-        #self.mixnum = 8
-        
-            
+            Molecule(name='CO2', weight=44.0, magic_a=46.e6, magic_b=2.97e1, mole_fraction=float(input(f'Enter mole fraction CO2\n'))),
+            Molecule(name='CO', weight=28.0, magic_a=16.98e6, magic_b=2.738e1, mole_fraction=float(input('Enter mole fraction CO \n'))),
+            Molecule(name='CH4', weight=16.0, magic_a=31.59e6, magic_b=2.9703e1, mole_fraction=float(input('Enter mole fraction CH4 \n'))),
+            Molecule(name='H2', weight=2.0, magic_a=3.56e6, magic_b=1.515e1, mole_fraction=float(input('Enter mole fraction H2\n'))),
+            Molecule(name='H2O', weight=18.0, magic_a=35.e6, magic_b=1.46e1, mole_fraction=float(input('Enter mole fraction H20\n'))),
+            Molecule(name='H2S', weight=34.0, magic_a=87.9e6, magic_b=2.0e1, mole_fraction=float(input('Enter mole fraction H2S \n'))),
+            Molecule(name='SO2', weight=64.06, magic_a=142.6e6, magic_b=3.94e1, mole_fraction=float(input('Enter mole fraction SO2 \n'))),
+            Molecule(name='N2', weight=28.0, magic_a=15.382e6, magic_b=2.68e1, mole_fraction=float(input('Enter mole fraction N2 \n')))]
      
     
     def check_totals(self):
-        if not sum(Molecule.mole_fraction) == 1.0:
+        if not sum(gas.mole_fraction for gas in self.molecules) == 1.0:
             print('The mole fractions do not add up to 1.0! Start again')
             self.obtain_input()
         else:
             pass
         
         
-    def calc_form_weight(self):
-        self.form = 0.0
-        for i in range(0,self.mixnum):
-            self.form += self.input_mixture[i] * self.formwt[i]
+    # def calc_form_weight(self):
+    #     self.form_wt = 0.0
+        
+    #         self.form += self.input_mixture[i] * self.formwt[i]
             
             
     def calc_isochore_volume(self):
-        self.voli = [self.vstart + 10*i - 10 for i in range(1,6,1)]
-        self.density = [self.form / x for x in self.voli]
+        self.voli = [self.vstart + 10*i - 10 for i in range(1,self.num_temps,1)]
+        self.density = [self.formula_weight / x for x in self.voli]
             
     
     def temp_pressure_calc(self, tk):
         rbar = 83.117
-        for i in range(1,12, 1):
+        for i in range(1,self.num_pressures, 1):
             t = tk - 1e2 + 1e2 * i
             tc = t - 273.15
             #bsum = bterm for each gas * mole fraction
@@ -128,25 +127,39 @@ class mrkHolloway():
         co2h2o += np.sqrt(a[0] * a[4])
         asum = 0.0
         bsum = 0.0
-        for i in range(self.mixnum):
-            bsum += b[i] * self.input_mixture[i]
-            for j in range(self.mixnum):
-                if (i == j):
-                    if ((i != 4) and (j != 0)):
-                        asum += self.input_mixture[i] * self.input_mixture[j] * a[i]
-                    elif (i == 4):
-                        asum += self.input_mixture[i] * self.input_mixture[j] * ah2om
-                    elif (i == 0):
-                        asum += self.input_mixture[i] * self.input_mixture[j] * aco2m
-                elif (( i == 4) and (j == 0) or (i == 0) and (j==4)):
-                    asum += self.input_mixture[i] * self.input_mixture[j] * co2h2o
+        for gas_i in self.molecules:
+            bsum += gas_i.magic_b * gas_i.mole_fraction
+            for gas_j in self.molecules:
+                if gas_i == gas_j:
+                    if gas_i.name != 'H20' and gas_j.name != 'CO2':
+                        asum += gas_i.mole_fraction * gas_j.mole_fraction * gas_i.magic_a
+                    elif gas_i.name == 'H20':
+                        asum += gas_i.mole_fraction * gas_j.mole_fraction * ah2om
+                    elif gas_i == 'CO2':
+                        asum += gas_i.mole_fraction * gas_j.mole_fraction * aco2m
+                elif ((gas_i == 'H20') and (gas_j == 'CO2') or (gas_i == 'CO2') and (gas_j == 'H20')):
+                    asum += gas_i.mole_fraction * gas_j.mole_fraction * co2h2o
                 else:
-                    asum += self.input_mixture[i] * self.input_mixture[j] * np.sqrt(a[i]*a[j])
+                    asum += gas_i.mole_fraction * gas_j.mole_fraction * \
+                    np.sqrt(gas_i.magic_a * gas_j.magic_a)
+                    
+            # for j in range(self.mixnum):
+            #     if (i == j):
+            #         if ((i != 4) and (j != 0)):
+            #             asum += self.input_mixture[i] * self.input_mixture[j] * a[i]
+                    # elif (i == 4):
+                    #     asum += self.input_mixture[i] * self.input_mixture[j] * ah2om
+                    # elif (i == 0):
+                    #     asum += self.input_mixture[i] * self.input_mixture[j] * aco2m
+                # elif (( i == 4) and (j == 0) or (i == 0) and (j==4)):
+                #     asum += self.input_mixture[i] * self.input_mixture[j] * co2h2o
+                # else:
+                #     asum += self.input_mixture[i] * self.input_mixture[j] * np.sqrt(a[i]*a[j])
         asum /= 1.013
         return asum, bsum
     
-    #### ADD A DATACLASS FOR THIS  ####
-    ### number of temp/pressure could be variablen###
+    
+    ## restart should actually restart ##
     ### how many increments of what temp ####
     ### max temp to go to ###
     ### add plots ###
@@ -163,10 +176,10 @@ class mrkHolloway():
     def run(self):
        
         self.check_totals()
-        self.calc_form_weight()
+        # self.calc_form_weight()
         print('The mole fractions are:')
-        formstr = ' '.join(f"{x:<9}" for x in self.names)
-        mix_str = ' '.join(f"{x:<9.3f}" for x in self.input_mixture)
+        formstr = ' '.join(f"{x.name:<9}" for x in self.molecules)
+        mix_str = ' '.join(f"{x.mole_fraction:<9.3f}" for x in self.molecules)
         
         # Print input mixture
         print(formstr)
@@ -187,13 +200,14 @@ class mrkHolloway():
         
         # Calc temp pressure
         self.temp_pressure_calc(tk)
-        self.additional_runs()
+        
         
                                   
 
 if __name__ == '__main__':
     go = mrkHolloway()
     go.run()
+    go.additional_runs()
     
     
     
