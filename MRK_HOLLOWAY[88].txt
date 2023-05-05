@@ -1,0 +1,276 @@
+
+FORTRAN Compiler Listing             10/29/91                       Page 1
+
+              Source File: MRK HOLLOWAY                    
+ 
+
+Program Unit: MRKHOL   Entry: 00000444   Options: ILSDNB
+ 
+  C***    FILE ISOCHORE 
+          IMPLICIT DOUBLE PRECISION (A-H, O-Z)
+          CHARACTER*80 ZOUT
+          REAL*4 NAMES(8)
+          DIMENSION X(8),VOLI(5),FORMWT(8),POUT(5),DEN(5)
+          DATA RBAR/83.117D0/, MIXNUM/8/
+          DATA NAMES/' CO2','  CO',' CH4','  H2',' H2O',' H2S'
+       $,' SO2','  N2'/
+        DATA FORMWT/44.D0,28.D0,16.D0,2.D0,18.D0,34.06D0,
+       164.06D0,28.0D0/
+  C     DATA X/0.25,0.00,0.00,0.00,0.75,0.00,0.00,0.00/
+  C
+          WRITE(9,69)
+     69 FORMAT('ENTER NAME OF OUTPUT FILE')
+          READ(9,555) ZOUT
+00016    555 FORMAT(A80)
+          OPEN (UNIT=8, FILE=ZOUT)
+    75    WRITE(9,40)
+    40    FORMAT('ENTER T (DEGC) AND MOLAR VOLUME (CC/MOLE)')
+          READ (9,*) TSTART,VSTART
+          IF(TSTART.LT.1.D-2) STOP
+  C       TSTART=400.0D0
+  C       VSTART=30.0D0
+          WRITE(9,61)
+     61   FORMAT('ENTER MOLE FRACTION CO2')
+        READ (9,*) X(1)
+          WRITE(9,62)
+     62 FORMAT('ENTER MOLE FRACTION CO')
+          READ(9,*) X(2)
+          WRITE(9,63)
+     63 FORMAT('ENTER MOLE FRACTION CH4')
+          READ(9,*) X(3)
+          WRITE(9,64)
+     64 FORMAT('ENTER MOLE FRACTION H2')
+          READ(9,*) X(4)
+          WRITE(9,65)
+     65 FORMAT('ENTER MOLE FRACTION H2O')
+          READ(9,*) X(5)
+          WRITE(9,66)
+     66 FORMAT('ENTER MOLE FRACTION H2S')
+          READ(9,*) X(6)
+          WRITE(9,67)
+     67 FORMAT('ENTER MOLE FRACTION SO2')
+          READ(9,*) X(7)
+          WRITE(9,68)
+     68 FORMAT('ENTER MOLE FRACTION N2')
+          READ(9,*) X(8)
+          XTOTAL=X(1)+X(2)+X(3)+X(4)+X(5)+X(6)+X(7)+X(8)
+          IF(XTOTAL.EQ.1.00) GO TO 556
+          WRITE(9,71)
+     71 FORMAT('YOUR MOLE FRACTIONS DO NOT ADD UP TO 1.0! START AGAIN')
+          GO TO 72
+
+   556    WRITE(8,100) NAMES,X,TSTART,VSTART
+    100 FORMAT(' THE MOLE FRACTIONS ARE:'/' ',8(5X,A4)/' ',8F9.3/
+       1'  THE STARTING TEMPERATURE = ',F6.0,' DEG. C'/
+       2'  THE STARTING MOLAR VOLUME = ',F6.3,' CM3/MOL')
+          WRITE(9,100) NAMES,X,TSTART,VSTART
+  C       CALCULATE MEAN FORMULA WEIGHT
+          FORM=0.0
+          DO 3 I=1,MIXNUM
+     3  FORM=FORM+X(I)*FORMWT(I)
+          TK=TSTART+273.15
+          PSTART=1.D3
+  C       CALCULATE TOTAL VOLUME FOR AN ISOCHORE
+          DO 5 I=1,5
+          VOLI(I)=VSTART+1.D1*I-1.D1
+     5  DEN(I)=FORM/VOLI(I)
+          WRITE(8,101)
+    101 FORMAT('0',30x,'ISOCHORE PRESSURES IN BARS')
+          WRITE(8,102) VOLI,DEN
+        WRITE(9,101)
+          WRITE(9,102) VOLI,DEN
+    102 FORMAT('0   T DEG C  MOL VOL=',5F10.3/' ',10X,'  DENSITY=',5F10.4
+       1/)
+        DO 10 K=1,11
+          T=TK-1.D2+1.D2*K
+          TC=T-273.15
+          CALL MRKMIX(TK,X,BSUM,ASUM)
+  C     CALCULATE ISOCHORE
+          DO 20 J=1,5
+          VOL=VOLI(J)
+          P=0.D0
+          IF(VOL.LT.(BSUM-1.0D0)) GO TO 19
+          ATERM=((RBAR*T)/(VOL-BSUM))
+          BTERM=ASUM/((DSQRT(T))*((VOL*VOL)+(BSUM*VOL)))
+          P=ATERM-BTERM
+     19   CONTINUE
+     20   POUT(J)=P
+          WRITE(8,105) TC,POUT
+    105 FORMAT(' ',F10.0,10X,5F10.0)
+          WRITE(9,105) TC,POUT
+     10   CONTINUE
+     72   WRITE(9,80)
+     80 FORMAT('DO YOU WANT TO DO ANOTHER COMPOSITION? NO=0,YES=1')
+          READ(9,*) INEXT
+          IF(INEXT.EQ.0) GO TO 85
+          IF(INEXT.EQ.1) GO TO 75
+     85   STOP
+          END
+
+
+FORTRAN Compiler Listing             10/29/91                       Page 3
+
+              Source File: MRK HOLLOWAY                    
+ 
+
+       Symbol and Label Tables for: MRKHOL
+
+
+SYMBOL                            TYPE              ADDRESS      COMMON
+
+ZOUT                              CHARACTER*80      00000040
+NAMES                             REAL              00000160
+X                                 DOUBLE PRECISION  00000220
+VOLI                              DOUBLE PRECISION  00000320
+FORMWT                            DOUBLE PRECISION  00000370
+POUT                              DOUBLE PRECISION  00000470
+DEN                               DOUBLE PRECISION  00000540
+RBAR+                             DOUBLE PRECISION  00000610
+MIXNUM+                           INTEGER           00000620
+TSTART+                           DOUBLE PRECISION  00000624
+VSTART+                           DOUBLE PRECISION  00000634
+XTOTAL+                           DOUBLE PRECISION  00000644
+FORM+                             DOUBLE PRECISION  00000654
+I+                                INTEGER           00000664
+TK+                               DOUBLE PRECISION  00000670
+PSTART+                           DOUBLE PRECISION  00000700
+K+                                INTEGER           00000710
+T+                                DOUBLE PRECISION  00000714
+TC+                               DOUBLE PRECISION  00000724
+BSUM+                             DOUBLE PRECISION  00000734
+ASUM+                             DOUBLE PRECISION  00000744
+J+                                INTEGER           00000754
+VOL+                              DOUBLE PRECISION  00000760
+P+                                DOUBLE PRECISION  00000770
+ATERM+                            DOUBLE PRECISION  00001000
+BTERM+                            DOUBLE PRECISION  00001010
+INEXT+                            INTEGER           00001020
+
+
+        STORAGE         MEMORY
+
+        LOCAL              532
+
+
+LABEL           ADDRESS              LABEL           ADDRESS
+
+69              0000001114           555             0000001254
+75              0000001346           40              0000001432
+61              0000001774           62              0000002202
+63              0000002406           64              0000002614
+65              0000003020           66              0000003226
+67              0000003434           68              0000003642
+71              0000004264           556             0000004376
+100             0000004562           3               0000005262
+5               0000005574           101             0000005756
+102             0000006360           10              0000007760
+20              0000007412           19              0000007404
+105             0000007610           72              0000010000
+80              0000010064           85              0000010324
+
+
+
+  C *** FILE MRKMIX ***
+          SUBROUTINE MRKMIX(T,Y,BSUM,ASUM)
+          IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+          DIMENSION A(8),B(8),Y(8)
+          DATA A/46.D6,16.98D6,31.59D6,3.56D6,35.D6,87.9D6,142.6D6,
+       115.382D6/
+        DATA B/2.97D1,2.738D1,2.9703D1,1.515D1,1.46D1,2.D1,3.94D1,
+       12.68D1/
+        DATA MIXNUM/8/,R/82.05D0/
+          IF(T.LT.1.D-4) T=1.D0
+          TCEL=T-273.15
+          R2T=R*R*T**2.5
+          RT=R*T**1.5
+         
+          AH2OM=166.8-.19308*TCEL+.1864D-3*TCEL*TCEL-.71288D-7*TCEL**3
+       
+        IF(TCEL.LT.6.D2) AH2OM=4.221D3-3.1227D1*TCEL+8.7485D-2*TCEL**2
+       1-1.07295D-4*TCEL**3+4.86111D-8*TCEL**4
+        IF(TCEL.GT.1200) AH2OM=140.-0.050*TCEL
+          AH2OM=AH2OM*10.D5
+          ACO2M=73.03-0.0714*TCEL+2.157D-5*TCEL*TCEL
+          ACO2M=ACO2M*10.D5
+
+          XK=EXP(-11.071+(5953./T)-(2.746D6/(T*T))+(4.646D8/(T*T*T)))
+          CO2H2O=XK*0.5*R2T
+          CO2H2O=CO2H2O+SQRT(A(1)*A(5))
+          ASUM=0.0
+          BSUM=0.0
+
+
+          DO 101 I=1,MIXNUM
+          BSUM=BSUM+B(I)*Y(I)
+          DO 101 J=1,MIXNUM
+          IF(I.EQ.J) GO TO 140
+          
+          IF(I.EQ.5.AND.J.EQ.1) GO TO 150
+          IF(I.EQ.1.AND.J.EQ.5) GO TO 150
+          
+          ASUM=ASUM+Y(I)*Y(J)*SQRT(A(I)*A(J))
+          GO TO 101
+    140 CONTINUE
+          IF(I.NE.5) GO TO 141
+          ASUM=ASUM+Y(I)*Y(J)*AH2OM
+          GO TO 101
+    141 IF(I.NE.1) GO TO 142
+          ASUM=ASUM+Y(I)*Y(J)*ACO2M
+          GO TO 101
+    142 ASUM=ASUM+Y(I)*Y(J)*A(I)
+          GO TO 101
+    150 ASUM=ASUM+Y(I)*Y(J)*CO2H2O
+    101 CONTINUE
+          ASUM=ASUM/1.013
+  C       WRITE(9,349) ASUM
+  C 349   FORMAT('0   THE REDLICH-KWONG "A" TERM IS ',F20.5,/)
+  C       WRITE(9,348) BSUM
+  C 348   FORMAT('0   THE REDLICH-KWONG "B" TERM IS ',F20.5,/)
+  C       PAUSE
+  C       write(9,*)tcel
+  C       pause
+          RETURN
+          END
+
+
+FORTRAN Compiler Listing             10/29/91                       Page 5
+
+              Source File: MRK HOLLOWAY                    
+ 
+
+       Symbol and Label Tables for: MRKMIX
+
+
+SYMBOL                            TYPE              ADDRESS      COMMON
+
+T+                                DOUBLE PRECISION  DUMMY
+Y                                 DOUBLE PRECISION  DUMMY
+BSUM+                             DOUBLE PRECISION  DUMMY
+ASUM+                             DOUBLE PRECISION  DUMMY
+A                                 DOUBLE PRECISION  00000020
+B                                 DOUBLE PRECISION  00000120
+MIXNUM+                           INTEGER           00000220
+R+                                DOUBLE PRECISION  00000224
+TCEL+                             DOUBLE PRECISION  00000234
+R2T+                              DOUBLE PRECISION  00000244
+RT+                               DOUBLE PRECISION  00000254
+AH2OM+                            DOUBLE PRECISION  00000264
+ACO2M+                            DOUBLE PRECISION  00000274
+XK+                               DOUBLE PRECISION  00000304
+CO2H2O+                           DOUBLE PRECISION  00000314
+I+                                INTEGER           00000324
+J+                                INTEGER           00000330
+
+
+        STORAGE         MEMORY
+
+        LOCAL              220
+
+
+LABEL           ADDRESS              LABEL           ADDRESS
+
+101             0000014432           140             0000013642
+141             0000014026           142             0000014204
+150             0000014332
+ 
+*****  0 errors
