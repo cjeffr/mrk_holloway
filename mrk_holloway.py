@@ -68,7 +68,9 @@ class mrkHolloway():
     def additional_runs(self):
         rerun = input('Do you want to do another composition? (y/n) \n')
         if rerun.lower() == 'y':
+            print(f'does {self.output_file} exist?', os.path.exists(self.output_file))
             while os.path.exists(self.output_file):
+                print('made it past the os.path.exists')
                 choice = input(f"{self.output_file} already exists. Do you want to overwrite it? (y/n): ")
                 if choice.lower() == 'n':
                     output_file = input('Enter a new output file name: ')
@@ -164,14 +166,22 @@ class mrkHolloway():
         # Set the axis labels
         plt.xlabel('Temperature (c)')
         plt.ylabel('Pressure (bar)')
+        
+        # Update x and y limits
+        plt.xlim(0, max(self.temps_k))
+        #plt.ylim(0, max_pressure ) # enter max pressure you want to see 
 
         # Show the plot
-        plt.show()
+        
         plt.savefig(f'{self.output_file}_figure_{num_output}.png')
+        plt.show()
         
 
     def write_output(self):
-        with open(self.output_file + '_output.txt', 'w') as f:
+        self.output_file += '_output.txt'
+        with open(self.output_file, 'w') as f:
+            f.write(f'The starting temperature = {self.tstart:3f} deg. c\n')
+            f.write(f'The starting molar volume = {self.vstart:3f} cm^3/mol\n')
             f.write('The mole fractions are:\n')
             formstr = ' '.join(f"{x.name:<9}" for x in self.molecules)
             mix_str = ' '.join(f"{x.mole_fraction:<9.3f}" for x in self.molecules)
@@ -190,7 +200,7 @@ class mrkHolloway():
             f.close()
        
             
-    def run(self, num_output):
+    def run(self, num_output=1):
         """Run everything calculate isochore and plot and print output to screen
         """
         self.check_totals()
@@ -254,10 +264,11 @@ def read_input_from_user():
     starting_vals = input('Enter T (deg C) and Molar Volume (cc/mole)\n')
     temp, volume = starting_vals.split()
     data['tstart'] = float(temp)
-    data['num_temps'] = int(input('Enter the number of temperature steps to calculate\n'))
     data['max_t'] = int(input('What is the maximum temperature to calculate?\n'))
-    data['num_volume'] = int(input('Enter the number of molar volume increments\n'))
+    data['num_temps'] = int(input('How many temperature increments to calculate\n'))
     data['max_v'] = int(input('Enter the maximum molar volume to calculate\n'))
+    data['num_volume'] = int(input('Enter the number of molar volume increments\n'))
+    
     
     if data['tstart'] < 0.01:
         sys.exit()
@@ -345,12 +356,7 @@ if __name__ == '__main__':
             go = mrkHolloway(output_file, data)
             go.run(num_output)
        
-            ### add a new file for each composition
-            ## same name as output but one with _data and one with _figure 
-            # check the output so that multiple from input file get printed to the same output name, but the figures get labeled?
             
-            # fix to make sure input from cmd plots
-            # if one of the components is h2o do not set starting temperature to at least 400
             
             
             
