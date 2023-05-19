@@ -19,12 +19,10 @@ class mrkHolloway():
         self.output_file = output_file
         self.tstart = data['tstart']
         self.vstart = data['vstart']
-        self.num_temps = data['num_temps']
+        self.t_increment = data['t_increment']
         self.max_t = data['max_t']
-        self.num_volume = data['num_volume']
-        self.max_v = data['max_v']
         self.molecules = data['molecules']
-        self.temps_k = np.linspace(self.tstart + 273.15, self.max_t + 273.15, self.num_temps)
+        self.temps_k = self.calculate_temp_increments()
         self.mixnum = len(self.molecules)
         self.formula_weight = sum(gas.weight * gas.mole_fraction for gas in self.molecules)
         
@@ -35,34 +33,43 @@ class mrkHolloway():
             self.obtain_input()
         else:
             pass
+        
+    def calculate_temp_increments(self):
+        temp_list = []
+        temp_list.append(self.tstart)
+        nearest_temp = ((self.tstart+ (self.t_increment -1)) // self.t_increment) * self.t_increment
+        next_t = nearest_temp
+        temp_list.append(next_t)
+        while next_t < self.max_t:
+            next_t += self.t_increment
+            temp_list.append(next_t)
+        temp_list = [x + 273.15 for x in temp_list]
+        return temp_list
               
             
     def calc_isochore_volume(self):
-        self.voli = np.linspace(self.vstart, self.max_v, self.num_volume)
-        self.density = [self.formula_weight / x for x in self.voli]
+        self.density = self.formula_weight / self.vstart
             
     
     def temp_pressure_calc(self, tk):
         rbar = 83.117
-        self.temp_p_data = {}
+        self.pressure_output = []
         for t in self.temps_k:
             tc = t - 273.15
-            
             asum, bsum = self.mrkmix(tk)
-            pout = []
-            for j in range(self.num_volume):
-                vol = self.voli[j]
-                p = 0.0
-                if not (vol < bsum - 1.0):
-                    aterm = ((rbar * t) / (vol - bsum))
-                    bterm = asum / ((np.sqrt(t)) * ((vol**2) + (bsum * vol)))
-                    p = aterm - bterm
-                pout.append(p)
+            
+            vol = self.vstart
+            p = 0.0
+            if not (vol < bsum - 1.0):
+                aterm = ((rbar * t) / (vol - bsum))
+                bterm = asum / ((np.sqrt(t)) * ((vol**2) + (bsum * vol)))
+                p = aterm - bterm
+            pout = p
                 
-            self.temp_p_data[tc] = pout
-            # Print temp/pressure outputs
+            self.pressure_output.append(pout)
+        # Print temp/pressure outputs
             print(f'{tc:10.0f} {"":<10s} ' + 
-                  ''.join(f'{x:10.0f}' for x in pout))
+                    ''.join(f'{pout:10.0f}'))
             
             
     def additional_runs(self):
@@ -147,30 +154,29 @@ class mrkHolloway():
         import matplotlib.pyplot as plt
         plt.style.use('./mystyle.mplstyle')
         
-        # Sort the data by density
-        self.data_by_density = {}
-        for idx, d in enumerate(self.density):
-            self.data_by_density[d] = {}
-            for temp_idx, temp in enumerate(self.temps_k):
-                self.data_by_density[d][temp-273.15] = self.temp_p_data[temp-273.15][idx]
+        # # Sort the data by density
+        # self.data_by_density = {}
+        # for idx, d in enumerate(self.density):
+        #     self.data_by_density[d] = {}
+        #     for temp_idx, temp in enumerate(self.temps_k):
+        #         self.data_by_density[d][temp-273.15] = self.temp_p_data[temp-273.15][idx]
                 
         # split the dictionary to be plotting temp v. pressure      
-        for density in self.data_by_density:
-            data = self.data_by_density[density]
-            lists = sorted(data.items()) # sorted by key, return a list of tuples
+        # for density in self.data_by_density:
+        #     data = self.data_by_density[density]
+        #     lists = sorted(data.items()) # sorted by key, return a list of tuples
 
-            temps, pressures = zip(*lists) # unpack a list of pairs into two tuples
-
-            plt.plot(temps, pressures, color='black')
+        #     temps, pressures = zip(*lists) # unpack a list of pairs into two tuples
+        temps = [x - 273.15 for x in self.temps_k]
+        plt.plot(temps, self.pressure_output, color='black')
         
         # Set the axis labels
         plt.xlabel('Temperature (c)')
         plt.ylabel('Pressure (bar)')
         
         # Update x and y limits
-        plt.xlim(0, max(self.temps_k))
-        #plt.ylim(0, max_pressure ) # enter max pressure you want to see 
-
+        plt.xlim(0, max(temps))
+        plt.ylim(0, max(self.pressure_output)) # enter max pressure you want to see 
         # Show the plot
         
         plt.savefig(f'{self.output_file}_figure_{num_output}.png')
@@ -181,22 +187,22 @@ class mrkHolloway():
         self.output_file += '_output.txt'
         with open(self.output_file, 'w') as f:
             f.write(f'The starting temperature = {self.tstart:3f} deg. c\n')
-            f.write(f'The starting molar volume = {self.vstart:3f} cm^3/mol\n')
+            f.write(f'The Molar volume = {self.vstart:3f} cm^3/mol\n')
             f.write('The mole fractions are:\n')
             formstr = ' '.join(f"{x.name:<9}" for x in self.molecules)
             mix_str = ' '.join(f"{x.mole_fraction:<9.3f}" for x in self.molecules)
             f.write(formstr + '\n')
             f.write(mix_str + '\n')
             f.write(f'{"":<30s} Isochore pressure in bars\n')
-            f.write(f'{"T deg. c mol vol =":<30s}' + 
-                    ' '.join(f"{x:<10.3f}" for x in self.voli) + '\n')
+            f.write(f'{"T deg. c  mol vol =":<30s}' + 
+                    ' '.join(f"{self.vstart:<10.3f}") + '\n')
             f.write(f'{"density =":<30s}' + 
-                    ' '.join(f'{x:<10.4f}' for x in self.density) + '\n')
+                    ' '.join(f'{self.density:<10.4f}') + '\n')
             
             # Print temp/pressure outputs
-            for tc in self.temps_k - 273.15:
-                f.write(f'{tc:10.0f} {"":<13s} ' + 
-                    ''.join(f'{x:10.0f}' for x in self.temp_p_data[tc]) + '\n')
+            for t in self.temps_k:
+                f.write(f'{t - 273.15:10.0f} {"":<13s} ' + 
+                    ''.join(f'{x:10.0f}' for x in self.pressure_output) + '\n')
             f.close()
        
             
@@ -221,10 +227,10 @@ class mrkHolloway():
         # Print volume and density
         print(f'{"":<30s} Isochore pressure in bars')
         print(f'{"T deg. c mol vol =":<30s}' + 
-              ' '.join(f"{x:<10.3f}" for x in self.voli))
+              ' '.join(f"{self.vstart:<10.3f}" ))
         
         print(f'{"density =":<30s}' + 
-              ' '.join(f'{x:<10.4f}' for x in self.density))
+              ' '.join(f'{self.density:<10.4f}'))
         
         # Calc temp pressure
         self.temp_pressure_calc(tk)
@@ -261,14 +267,11 @@ def read_input_from_user():
     """
     
     data = {}
-    starting_vals = input('Enter T (deg C) and Molar Volume (cc/mole)\n')
-    temp, volume = starting_vals.split()
+    temp = input('Enter T (deg C) \n') 
+    volume = input("Enter molar volume \n")
     data['tstart'] = float(temp)
-    data['max_t'] = int(input('What is the maximum temperature to calculate?\n'))
-    data['num_temps'] = int(input('How many temperature increments to calculate\n'))
-    data['max_v'] = int(input('Enter the maximum molar volume to calculate\n'))
-    data['num_volume'] = int(input('Enter the number of molar volume increments\n'))
-    
+    data['max_t'] = float(input('What is the maximum temperature to calculate?\n'))
+    data['t_increment'] = int(input('What increment of degrees?\n'))
     
     if data['tstart'] < 0.01:
         sys.exit()
@@ -345,10 +348,8 @@ if __name__ == '__main__':
             data = {
                 'tstart': row['starting_temp'],
                 'vstart': row['starting_volume'],
-                'num_temps': row['temp_increments'],
+                't_increment': row['temp_increments'],
                 'max_t': row['max_temp'],
-                'num_volume': row['volume_increments'],
-                'max_v': row['max_volume'],
                 'molecules': row['molecules']
             }
             output_file = f'{output_file_name}_{idx}'
@@ -356,13 +357,5 @@ if __name__ == '__main__':
             go = mrkHolloway(output_file, data)
             go.run(num_output)
        
-            
-            
-            
-            
-                
-    
-    
-        
         
         
